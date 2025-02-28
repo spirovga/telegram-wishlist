@@ -26,40 +26,49 @@ const App: React.FC = () => {
       const idFromUrl = urlParams.get('id');
       const dataFromUrl = urlParams.get('data');
       
-      if (idFromUrl) {
-        if (dataFromUrl) {
-          // Load wishlist from URL data parameter
-          try {
-            const decodedData = JSON.parse(atob(dataFromUrl));
-            setWishItems(decodedData);
-            setWishlistId(idFromUrl);
-            setIsSharedWishlist(true);
-          } catch (e) {
-            console.error('Error parsing shared wishlist data:', e);
-          }
+      if (idFromUrl && dataFromUrl) {
+        // Load wishlist from URL data parameter (sharing case)
+        try {
+          const decodedData = JSON.parse(atob(dataFromUrl));
+          setWishItems(decodedData);
+          setWishlistId(idFromUrl);
+          setIsSharedWishlist(true);
+          console.log('Loaded shared wishlist from URL data:', decodedData);
+        } catch (e) {
+          console.error('Error parsing shared wishlist data:', e);
+        }
+      } else if (idFromUrl) {
+        // This is for backward compatibility
+        const savedItems = localStorage.getItem(`wishlist_${idFromUrl}`);
+        if (savedItems) {
+          setWishItems(JSON.parse(savedItems));
+          setWishlistId(idFromUrl);
         } else {
-          // Load shared wishlist from localStorage if exists
-          const savedItems = localStorage.getItem(`wishlist_${idFromUrl}`);
-          if (savedItems) {
-            setWishItems(JSON.parse(savedItems));
-            setWishlistId(idFromUrl);
-          }
+          // If no data found, create new wishlist
+          createNewWishlist();
         }
       } else {
         // Create a new wishlist ID if none exists
-        const newId = Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
-        setWishlistId(newId);
-        
-        // Load from localStorage if exists
-        const savedItems = localStorage.getItem(`wishlist_${newId}`);
-        if (savedItems) {
-          setWishItems(JSON.parse(savedItems));
-        }
+        createNewWishlist();
       }
     } catch (error) {
       console.error('Error initializing wishlist:', error);
+      // Fallback to new wishlist
+      createNewWishlist();
     }
   }, []);
+
+  const createNewWishlist = () => {
+    const newId = Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+    setWishlistId(newId);
+    setIsSharedWishlist(false);
+    
+    // Load from localStorage if exists
+    const savedItems = localStorage.getItem(`wishlist_${newId}`);
+    if (savedItems) {
+      setWishItems(JSON.parse(savedItems));
+    }
+  };
 
   // Save wishlist to localStorage whenever it changes
   useEffect(() => {
@@ -68,15 +77,20 @@ const App: React.FC = () => {
     }
   }, [wishItems, wishlistId, isSharedWishlist]);
 
+  // Handle MainButton visibility and state
   useEffect(() => {
-    // Set Telegram main button for adding a wish
     try {
-      // Only show add button if not viewing a shared wishlist
-      if (!isSharedWishlist) {
-        WebApp.MainButton.setText('Add Wish');
-        WebApp.MainButton.show();
-        WebApp.MainButton.onClick(() => setIsFormVisible(true));
+      // Only manage MainButton if form is not visible
+      if (!isFormVisible) {
+        if (!isSharedWishlist) {
+          WebApp.MainButton.setText('Add Wish');
+          WebApp.MainButton.show();
+          WebApp.MainButton.onClick(() => setIsFormVisible(true));
+        } else {
+          WebApp.MainButton.hide();
+        }
       } else {
+        // Hide MainButton when form is visible
         WebApp.MainButton.hide();
       }
       
@@ -85,19 +99,8 @@ const App: React.FC = () => {
         WebApp.MainButton.offClick();
       };
     } catch (error) {
-      console.error('Error initializing Telegram MainButton:', error);
+      console.error('Error managing Telegram MainButton:', error);
       return () => {};
-    }
-  }, [isSharedWishlist]);
-
-  // Make sure the Telegram MainButton is visible when returning from the form
-  useEffect(() => {
-    if (!isFormVisible && !isSharedWishlist) {
-      try {
-        WebApp.MainButton.show();
-      } catch (error) {
-        console.error('Error showing MainButton:', error);
-      }
     }
   }, [isFormVisible, isSharedWishlist]);
 
@@ -122,16 +125,31 @@ const App: React.FC = () => {
       // Generate shareable URL with wishlist ID and data
       const shareUrl = `${window.location.origin}${window.location.pathname}?id=${wishlistId}&data=${encodedData}`;
       
-      // Use Telegram's native sharing if available
-      if (WebApp.isExpanded) {
-        WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Check out my wishlist!')}`);
-      } else {
-        // Fallback to clipboard copy
-        navigator.clipboard.writeText(shareUrl);
-        alert('Shareable link copied to clipboard!');
-      }
+      // Copy to clipboard first
+      navigator.clipboard.writeText(shareUrl)
+        .then(() => {
+          console.log('Link copied to clipboard:', shareUrl);
+          
+          // Then show sharing options
+          WebApp.showAlert('Link copied! You can now share it with your friends.');
+          
+          // Open Telegram sharing after a short delay
+          setTimeout(() => {
+            try {
+              WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Check out my wishlist!')}`);
+            } catch (shareError) {
+              console.error('Error opening Telegram share:', shareError);
+            }
+          }, 1500);
+        })
+        .catch(copyError => {
+          console.error('Error copying to clipboard:', copyError);
+          // Fallback if clipboard copy fails
+          WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Check out my wishlist!')}`);
+        });
     } catch (error) {
       console.error('Error sharing wishlist:', error);
+      WebApp.showAlert('Error sharing wishlist. Please try again.');
     }
   };
 
@@ -190,7 +208,7 @@ const App: React.FC = () => {
                 <p>
                   {isSharedWishlist 
                     ? "This shared wishlist is empty."
-                    : "Your wishlist is empty. Tap the main blue button at the bottom of your screen to add items."}
+                    : "Your wishlist is empty. Tap the blue button at the bottom to add items."}
                 </p>
               </div>
             )}

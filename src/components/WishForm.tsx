@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import WebApp from '@twa-dev/sdk';
 import '../styles/WishForm.css';
 
@@ -18,42 +18,61 @@ const WishForm: React.FC<WishFormProps> = ({ onSubmit, onCancel }) => {
   const [url, setUrl] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!title || !description) {
-      WebApp.showPopup({
-        title: 'Required Fields',
-        message: 'Please fill in both title and description fields.',
-        buttons: [
-          {
-            id: "ok",
-            type: "default",
-            text: "OK"
-          }
-        ]
-      });
-      return;
+  // Set up MainButton on component mount
+  useEffect(() => {
+    try {
+      // Configure MainButton for form submission
+      WebApp.MainButton.setText('Add to Wishlist');
+      WebApp.MainButton.show();
+      
+      const handleMainButtonClick = () => {
+        if (!title || !description) {
+          WebApp.showPopup({
+            title: 'Required Fields',
+            message: 'Please fill in both title and description fields.',
+            buttons: [{
+              id: "ok",
+              type: "default",
+              text: "OK"
+            }]
+          });
+          return;
+        }
+
+        onSubmit({
+          title,
+          description,
+          url: url || undefined,
+          priority,
+        });
+      };
+      
+      WebApp.MainButton.onClick(handleMainButtonClick);
+      
+      // Clean up when component unmounts
+      return () => {
+        WebApp.MainButton.offClick(handleMainButtonClick);
+      };
+    } catch (error) {
+      console.error('Error setting up MainButton in WishForm:', error);
     }
+  }, [title, description, url, priority, onSubmit]);
 
-    onSubmit({
-      title,
-      description,
-      url: url || undefined,
-      priority,
-    });
-
+  // Handle Cancel button
+  const handleCancel = () => {
     // Reset form
     setTitle('');
     setDescription('');
     setUrl('');
     setPriority('medium');
+    
+    onCancel();
   };
 
   return (
     <div className="wish-form-container">
       <h2>Add a New Wish</h2>
-      <form onSubmit={handleSubmit} className="wish-form">
+      <div className="wish-form">
         <div className="form-group">
           <label htmlFor="title">Title*</label>
           <input
@@ -102,14 +121,11 @@ const WishForm: React.FC<WishFormProps> = ({ onSubmit, onCancel }) => {
         </div>
 
         <div className="form-actions">
-          <button type="button" onClick={onCancel} className="cancel-button">
+          <button type="button" onClick={handleCancel} className="cancel-button">
             Cancel
           </button>
-          <button type="submit" className="submit-button">
-            Add to Wishlist
-          </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 };
