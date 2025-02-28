@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Wishlist App</title>
+    <!-- Load Telegram Web App script with defer to ensure it loads properly -->
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+    <script type="module" crossorigin src="/telegram-wishlist/assets/index-ad8f06dc.js"></script>
+    <link rel="stylesheet" href="/telegram-wishlist/assets/index-dafa181c.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Add a small script to verify Telegram Web App initialization -->
+    <script>
+      window.addEventListener('load', function() {
+        // Check if Telegram WebApp is defined
+        if (!window.Telegram || !window.Telegram.WebApp) {
+          // Add a fallback message if Telegram Web App is not available
+          const rootElement = document.getElementById('root');
+          rootElement.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: #333;">
+              <h2>Telegram Mini App</h2>
+              <p>This app is designed to be opened within Telegram.</p>
+              <p>Please open this app through a Telegram bot.</p>
+            </div>
+          `;
+        }
+      });
+    </script>
+    
+  </body>
+</html> 
