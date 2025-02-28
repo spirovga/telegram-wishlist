@@ -1,0 +1,91 @@
+.wish-list {
+  margin-bottom: 24px;
+}
+
+.wish-list h2 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.wish-list ul {
+  list-style: none;
+}
+
+.wish-item {
+  position: relative;
+  background-color: var(--tg-theme-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.wish-content {
+  flex: 1;
+}
+
+.wish-item h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.wish-item p {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--tg-theme-text-color);
+  opacity: 0.8;
+}
+
+.wish-item a {
+  display: inline-block;
+  font-size: 14px;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: rgba(40, 120, 240, 0.1);
+}
+
+.priority-badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+.priority-low .priority-badge {
+  background-color: var(--priority-low);
+  color: white;
+}
+
+.priority-medium .priority-badge {
+  background-color: var(--priority-medium);
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.priority-high .priority-badge {
+  background-color: var(--priority-high);
+  color: white;
+}
+
+.delete-button {
+  background: none;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  color: var(--tg-theme-text-color);
+}
+
+.delete-button:hover {
+  opacity: 1;
+} 
