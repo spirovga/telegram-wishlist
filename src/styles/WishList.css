@@ -88,4 +88,18 @@
 
 .delete-button:hover {
   opacity: 1;
+}
+
+.shared-list-notice {
+  margin-top: 20px;
+  padding: 12px;
+  background-color: rgba(40, 120, 240, 0.1);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.shared-list-notice p {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color);
+  margin: 0;
 } 

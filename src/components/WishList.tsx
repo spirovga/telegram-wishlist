@@ -11,7 +11,7 @@ interface WishItem {
 
 interface WishListProps {
   items: WishItem[];
-  onRemove: (id: string) => void;
+  onRemove?: (id: string) => void;
 }
 
 const WishList: React.FC<WishListProps> = ({ items, onRemove }) => {
@@ -23,9 +23,11 @@ const WishList: React.FC<WishListProps> = ({ items, onRemove }) => {
     return null;
   }
 
+  const isSharedList = !onRemove;
+
   return (
     <div className="wish-list">
-      <h2>Your Wishes</h2>
+      <h2>Wishes</h2>
       <ul>
         {items.map((item) => (
           <li key={item.id} className={`wish-item ${getPriorityClass(item.priority)}`}>
@@ -41,16 +43,23 @@ const WishList: React.FC<WishListProps> = ({ items, onRemove }) => {
                 Priority: {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)}
               </span>
             </div>
-            <button 
-              className="delete-button" 
-              onClick={() => onRemove(item.id)}
-              aria-label="Delete item"
-            >
-              ✕
-            </button>
+            {!isSharedList && (
+              <button 
+                className="delete-button" 
+                onClick={() => onRemove?.(item.id)}
+                aria-label="Delete item"
+              >
+                ✕
+              </button>
+            )}
           </li>
         ))}
       </ul>
+      {isSharedList && (
+        <div className="shared-list-notice">
+          <p>This is a shared wishlist - you're viewing it in read-only mode.</p>
+        </div>
+      )}
     </div>
   );
 };
