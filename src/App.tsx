@@ -15,7 +15,38 @@ interface WishItem {
 const App: React.FC = () => {
   const [wishItems, setWishItems] = useState<WishItem[]>([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [showFallbackButton, setShowFallbackButton] = useState(false);
+  const [wishlistId, setWishlistId] = useState<string>('');
+
+  // Initialize wishlist ID or load from URL param
+  useEffect(() => {
+    try {
+      // Check if there's a wishlist ID in the URL (for sharing)
+      const urlParams = new URLSearchParams(window.location.search);
+      const idFromUrl = urlParams.get('id');
+      
+      if (idFromUrl) {
+        // Load shared wishlist from localStorage if exists
+        const savedItems = localStorage.getItem(`wishlist_${idFromUrl}`);
+        if (savedItems) {
+          setWishItems(JSON.parse(savedItems));
+          setWishlistId(idFromUrl);
+        }
+      } else {
+        // Create a new wishlist ID if none exists
+        const newId = Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+        setWishlistId(newId);
+      }
+    } catch (error) {
+      console.error('Error initializing wishlist:', error);
+    }
+  }, []);
+
+  // Save wishlist to localStorage whenever it changes
+  useEffect(() => {
+    if (wishlistId && wishItems.length > 0) {
+      localStorage.setItem(`wishlist_${wishlistId}`, JSON.stringify(wishItems));
+    }
+  }, [wishItems, wishlistId]);
 
   useEffect(() => {
     // Set Telegram main button for adding a wish
@@ -24,21 +55,12 @@ const App: React.FC = () => {
       WebApp.MainButton.show();
       WebApp.MainButton.onClick(() => setIsFormVisible(true));
       
-      // If we can't detect the main button within 1 second, show the fallback
-      const timer = setTimeout(() => {
-        if (!document.querySelector('.telegram-button')) {
-          setShowFallbackButton(true);
-        }
-      }, 1000);
-      
       return () => {
-        clearTimeout(timer);
         WebApp.MainButton.hide();
         WebApp.MainButton.offClick();
       };
     } catch (error) {
       console.error('Error initializing Telegram MainButton:', error);
-      setShowFallbackButton(true);
       return () => {};
     }
   }, []);
@@ -67,10 +89,36 @@ const App: React.FC = () => {
     setWishItems(wishItems.filter(item => item.id !== id));
   };
 
+  const shareWishlist = () => {
+    try {
+      // Generate shareable URL with wishlist ID
+      const shareUrl = `${window.location.origin}${window.location.pathname}?id=${wishlistId}`;
+      
+      // Use Telegram's native sharing if available
+      if (WebApp.isExpanded) {
+        WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Check out my wishlist!')}`);
+      } else {
+        // Fallback to clipboard copy
+        navigator.clipboard.writeText(shareUrl);
+        alert('Shareable link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing wishlist:', error);
+    }
+  };
+
   return (
     <div className="app">
       <header className="app-header">
         <h1>My Wishlist</h1>
+        {wishlistId && (
+          <div className="wishlist-id">
+            ID: {wishlistId}
+            <button className="share-button" onClick={shareWishlist}>
+              Share
+            </button>
+          </div>
+        )}
       </header>
       
       <main>
@@ -79,29 +127,10 @@ const App: React.FC = () => {
         ) : (
           <>
             <WishList items={wishItems} onRemove={removeWishItem} />
-            {wishItems.length === 0 ? (
+            {wishItems.length === 0 && (
               <div className="empty-state">
-                <p>Your wishlist is empty. {!showFallbackButton && 'Tap the main blue button at the bottom of your screen to add items.'}</p>
-                {showFallbackButton && (
-                  <button 
-                    className="fallback-add-button" 
-                    onClick={() => setIsFormVisible(true)}
-                  >
-                    Add Wish
-                  </button>
-                )}
+                <p>Your wishlist is empty. Tap the main blue button at the bottom of your screen to add items.</p>
               </div>
-            ) : (
-              showFallbackButton && (
-                <div className="add-button-container">
-                  <button 
-                    className="fallback-add-button" 
-                    onClick={() => setIsFormVisible(true)}
-                  >
-                    Add Another Wish
-                  </button>
-                </div>
-              )
             )}
           </>
         )}
