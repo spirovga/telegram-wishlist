@@ -119,34 +119,64 @@ const App: React.FC = () => {
 
   const shareWishlist = () => {
     try {
-      // Encode wishlist data as base64 for sharing
-      const encodedData = btoa(JSON.stringify(wishItems));
+      if (wishItems.length === 0) {
+        WebApp.showAlert('Your wishlist is empty. Add some items before sharing.');
+        return;
+      }
+
+      // Keep the data as minimal as possible
+      const minimalItems = wishItems.map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        url: item.url,
+        priority: item.priority
+      }));
+      
+      // Encode wishlist data as base64 for sharing (keep it compact)
+      const encodedData = btoa(JSON.stringify(minimalItems));
       
       // Generate shareable URL with wishlist ID and data
       const shareUrl = `${window.location.origin}${window.location.pathname}?id=${wishlistId}&data=${encodedData}`;
       
-      // Copy to clipboard first
-      navigator.clipboard.writeText(shareUrl)
-        .then(() => {
-          console.log('Link copied to clipboard:', shareUrl);
-          
-          // Then show sharing options
-          WebApp.showAlert('Link copied! You can now share it with your friends.');
-          
-          // Open Telegram sharing after a short delay
-          setTimeout(() => {
-            try {
-              WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Check out my wishlist!')}`);
-            } catch (shareError) {
-              console.error('Error opening Telegram share:', shareError);
-            }
-          }, 1500);
-        })
-        .catch(copyError => {
-          console.error('Error copying to clipboard:', copyError);
-          // Fallback if clipboard copy fails
-          WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Check out my wishlist!')}`);
-        });
+      console.log('Sharing URL:', shareUrl);
+      console.log('URL length:', shareUrl.length);
+      
+      // Direct approach to sharing
+      WebApp.showPopup({
+        title: 'Share Wishlist',
+        message: 'Choose how you want to share your wishlist:',
+        buttons: [
+          {
+            id: "copy",
+            type: "default",
+            text: "Copy Link"
+          },
+          {
+            id: "telegram",
+            type: "default",
+            text: "Share in Telegram"
+          }
+        ]
+      }, (buttonId) => {
+        if (buttonId === 'copy') {
+          // Copy to clipboard
+          navigator.clipboard.writeText(shareUrl)
+            .then(() => {
+              WebApp.showAlert('Link copied to clipboard! You can now share it with your friends.');
+            })
+            .catch((error) => {
+              console.error('Error copying to clipboard:', error);
+              WebApp.showAlert('Could not copy link. Please try the Telegram share option.');
+            });
+        } else if (buttonId === 'telegram') {
+          // Share directly in Telegram
+          WebApp.switchInlineQuery(
+            `Check out my wishlist: ${shareUrl}`,
+            ['users', 'groups', 'channels']
+          );
+        }
+      });
     } catch (error) {
       console.error('Error sharing wishlist:', error);
       WebApp.showAlert('Error sharing wishlist. Please try again.');
